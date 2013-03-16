@@ -1,0 +1,33 @@
+{
+  "name": "zoott",
+  "version": "0.0.1",
+  "description": "A simple task tree in Zookeeper.",
+  "private": true,
+  "main": "lib/main.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "./node_modules/.bin/mocha -u tdd test/*.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/enki-labs/zoott.git"
+  },
+  "keywords": [
+    "task"
+  ],
+  "author": "enki-labs",
+  "license": "gpl3",
+  "readmeFilename": "README.md",
+  "gitHead": "b13ed9a6ea0daca923137b03c03b407519468669",
+  "dependencies": {
+    "zkplus": "*",
+    "winston": "*",
+    "async": "*",
+    "step": "*"
+  },
+  "devDependencies": {
+  "mocha": "*"
+  }
+}
