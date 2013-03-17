@@ -10,18 +10,15 @@ var testParams = {
 ,   port: 2181
 };
 
-suite('main - init tests', function () {
+suite('zoott queue tests', function () {
 
-    test('constructor and queue creation', function (done)
-    {
-        Assert.doesNotThrow ( function() {var zc = new Zoott(testParams.host, testParams.port, testParams.world, done);});
-    });
+var that = this;
+    setup( function(done) { that.zc = new Zoott(testParams.host, testParams.port, testParams.world, done, true); });
 
     test('queues exist and can be read', function (done)
     {
         Assert.doesNotThrow ( function () {
             Step(
-                    function ()     { this.zc = new Zoott(testParams.host, testParams.port, testParams.world, this); },
                     function ()     { this.zc.getPending(this); },
                     function ()     { this.zc.getWorking(this); },
                     function ()     { this.zc.getCompleted(this); },
@@ -30,13 +27,6 @@ suite('main - init tests', function () {
                 );
         });
     });
-});
-
-suite('main - method tests', function () {
-
-    var that = this;
-
-    setup( function(done) { that.zc = new Zoott(testParams.host, testParams.port, testParams.world, done); });
 
     test('add task with no parent', function (done)
     {
@@ -46,8 +36,9 @@ suite('main - method tests', function () {
 
     test('read task with no parent', function (done)
     {
-        var taskInfo = { name: 'atwnp', type: 'test', data: { empty: true } };
-        that.zc.findTask('atwnp_test',
+        var taskInfo = { name: 'atwnp2', type: 'test', data: { empty: true } };
+        that.zc.queue(taskInfo, null, null, function () {
+        that.zc.findTask('atwnp2_test',
             function (data)
             {
                 Assert.equal(taskInfo.name, data.name);
@@ -55,19 +46,22 @@ suite('main - method tests', function () {
                 Assert.equal(taskInfo.data.empty, data.data.empty);
                 done();
             });
+        });
     });
 
     test('read queue with no parent', function (done)
     {
-        var taskInfo = { name: 'atwnp', type: 'test', data: { empty: true } };
-        that.zc.findPending('atwnp_test',
+        var taskInfo = { name: 'atwnp3', type: 'test', data: { empty: true } };
+        that.zc.queue(taskInfo, null, null, function () {
+        that.zc.findPending('atwnp3_test',
             function (data)
             {
                 Assert.equal(data.name, taskInfo.name);
                 Assert.equal(data.type, taskInfo.type);
-                Assert.equal(data.target, Util.format('/%s/tasks/atwnp_test', testParams.world));
+                Assert.equal(data.target, Util.format('/%s/tasks/atwnp3_test', testParams.world));
                 done();
             });
+        });
     });
 
     test('add task with parent', function (done)
@@ -94,4 +88,44 @@ suite('main - method tests', function () {
         );
     });
 
+    test('queue dequeue with no parent', function (done)
+    {
+        var taskInfo = { name: 'qdwnp', type: 'deq1', data: { empty: true } };
+
+        Step(
+            function () { that.zc.queue(taskInfo, null, null, this); },
+            function () { that.zc.dequeue('deq1', this); },
+            function (data) 
+            {
+                Assert.ifError(!data);
+                Assert.equal(data.name, 'qdwnp');
+                done();
+            }
+        );
+    });
+
+    test('queue dequeue with parent', function (done)
+    {
+        var parent = { name: 'qdtwpParent', type: 'deq2', data: { empty: true } };
+        var child = { name: 'qdtwpChild', type: 'deq2', data: { empty: true } };
+
+        Step(
+            function () { that.zc.queue(parent, null, null, this); },
+            function () { that.zc.queue(child, {name: 'qdtwpP.*', type: 'deq2'}, function(c,p) { return c.name; }, this); },
+            function () { that.zc.dequeue('deq2', this); },
+            function (data) 
+            {
+                Assert.ifError(!data);
+                Assert.equal(data.name, 'qdtwpParent');
+                that.zc.complete('qdtwpParent_deq2', this);
+            },
+            function () { that.zc.dequeue('deq2', this); },
+            function (data) 
+            {
+                Assert.ifError(!data);
+                Assert.equal(data.name, 'qdtwpChild');
+                done();
+            }
+        );
+    });
 });
